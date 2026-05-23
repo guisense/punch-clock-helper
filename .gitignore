@@ -1,0 +1,16 @@
+.DS_Store
+
+# Android / Gradle
+**/.gradle/
+**/build/
+**/local.properties
+**/.idea/
+*.iml
+
+# Generated packages
+*.apk
+*.aab
+
+# Local-only early iOS prototype
+/PunchClock/
+/PunchClock.xcodeproj/

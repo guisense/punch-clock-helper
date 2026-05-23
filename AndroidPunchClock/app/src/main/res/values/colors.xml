@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="blue">#7BA7FF</color>
+    <color name="green">#76E0B7</color>
+    <color name="orange">#FFC66D</color>
+    <color name="red">#FF8AA1</color>
+    <color name="surface">#F7F8FC</color>
+    <color name="panel">#FFFFFF</color>
+    <color name="text">#253047</color>
+    <color name="muted">#7A869A</color>
+    <color name="line">#E8ECF5</color>
+    <color name="lavender">#C5B8FF</color>
+    <color name="aqua">#7DE4F1</color>
+</resources>
