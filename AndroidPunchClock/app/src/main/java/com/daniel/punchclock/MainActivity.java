@@ -7,8 +7,12 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.drawable.GradientDrawable;
 import android.graphics.Typeface;
+import android.media.AudioManager;
+import android.media.ToneGenerator;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.VibrationEffect;
+import android.os.Vibrator;
 import android.view.Gravity;
 import android.widget.ImageButton;
 import android.widget.Button;
@@ -24,13 +28,15 @@ public final class MainActivity extends Activity {
     private AttendanceStore store;
     private WorkSettings settings;
     private LinearLayout root;
-    private TextView safeTimeText;
+    private TextView heroLabelText;
+    private TextView mainTimeText;
     private TextView safeMessageText;
     private TextView actionHintText;
     private TextView clockInText;
     private TextView clockOutText;
     private TextView workedText;
     private Button punchButton;
+    private ToneGenerator toneGenerator;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -40,8 +46,17 @@ public final class MainActivity extends Activity {
         store.ensureDemoData();
         ReminderScheduler.ensureNotificationChannel(this);
         requestNotificationPermission();
+        prepareFeedback();
         buildUi();
         refresh();
+    }
+
+    @Override
+    protected void onDestroy() {
+        if (toneGenerator != null) {
+            toneGenerator.release();
+        }
+        super.onDestroy();
     }
 
     @Override
@@ -83,15 +98,15 @@ public final class MainActivity extends Activity {
         hero.setPadding(0, dp(4), 0, dp(22));
         root.addView(hero);
 
-        TextView label = text("建議下班", 14, R.color.muted, true);
-        label.setPadding(0, dp(8), 0, 0);
-        hero.addView(label);
+        heroLabelText = text("今日打卡", 14, R.color.muted, true);
+        heroLabelText.setPadding(0, dp(8), 0, 0);
+        hero.addView(heroLabelText);
 
-        safeTimeText = text("--:--", 54, R.color.text, true);
-        safeTimeText.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
-        safeTimeText.setGravity(Gravity.CENTER);
-        safeTimeText.setPadding(0, dp(2), 0, 0);
-        hero.addView(safeTimeText);
+        mainTimeText = text("--:--", 54, R.color.text, true);
+        mainTimeText.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        mainTimeText.setGravity(Gravity.CENTER);
+        mainTimeText.setPadding(0, dp(2), 0, 0);
+        hero.addView(mainTimeText);
 
         safeMessageText = text("先記錄上班時間", 16, R.color.muted, false);
         safeMessageText.setGravity(Gravity.CENTER);
@@ -138,9 +153,11 @@ public final class MainActivity extends Activity {
             store.recordClockIn(now);
             ReminderScheduler.scheduleSafeClockOut(this, store.todayRecord(), settings);
             CountdownNotifier.update(this);
+            playPunchFeedback();
         } else {
             store.recordClockOut(now);
             CountdownNotifier.cancel(this);
+            playPunchFeedback();
         }
 
         refresh();
@@ -161,26 +178,31 @@ public final class MainActivity extends Activity {
     }
 
     private void refresh() {
-        if (store == null || safeTimeText == null) {
+        if (store == null || mainTimeText == null) {
             return;
         }
 
         WorkRecord record = store.todayRecord();
         if (record.clockIn == null) {
+            heroLabelText.setText("今日打卡");
+            mainTimeText.setText("--:--");
             punchButton.setText("上班\n打卡");
             punchButton.setBackground(circleBackground(R.color.blue));
             actionHintText.setText("刷臉後點一下");
         } else if (record.clockOut == null) {
+            heroLabelText.setText("上班打卡");
+            mainTimeText.setText(Formatters.time(record.clockIn));
             punchButton.setText("下班\n打卡");
             punchButton.setBackground(circleBackground(R.color.green));
             actionHintText.setText("刷臉下班後點一下");
         } else {
+            heroLabelText.setText("下班打卡");
+            mainTimeText.setText(Formatters.time(record.clockOut));
             punchButton.setText("更新\n下班");
             punchButton.setBackground(circleBackground(R.color.orange));
             actionHintText.setText("已完成，點圓鈕可修正下班時間");
         }
 
-        safeTimeText.setText(Formatters.time(record.safeClockOut(settings)));
         clockInText.setText(Formatters.time(record.clockIn));
         clockOutText.setText(Formatters.time(record.clockOut));
         workedText.setText(Formatters.workedTime(record.workedMinutes(settings)));
@@ -191,20 +213,39 @@ public final class MainActivity extends Activity {
     private void setSafeMessage(WorkRecord record) {
         LocalDateTime safe = record.safeClockOut(settings);
         if (safe == null) {
-            safeMessageText.setText("打卡後自動計算下班時間");
+            safeMessageText.setText("打卡後顯示實際時間");
             safeMessageText.setTextColor(color(R.color.muted));
             return;
         }
 
         long remaining = Duration.between(LocalDateTime.now(), safe).toMinutes();
         if (remaining <= 0) {
-            safeMessageText.setText("理論 " + Formatters.time(record.plannedClockOut(settings)) + " · 可下班");
+            safeMessageText.setText("安全下班 " + Formatters.time(safe) + " · 可下班");
             safeMessageText.setTextColor(color(R.color.green));
             return;
         }
 
-        safeMessageText.setText("理論 " + Formatters.time(record.plannedClockOut(settings)) + " · 剩 " + Formatters.remainingMinutes(Math.max(1, remaining)));
+        safeMessageText.setText("安全下班 " + Formatters.time(safe) + " · 剩 " + Formatters.remainingMinutes(Math.max(1, remaining)));
         safeMessageText.setTextColor(color(R.color.text));
+    }
+
+    private void prepareFeedback() {
+        toneGenerator = new ToneGenerator(AudioManager.STREAM_NOTIFICATION, 55);
+    }
+
+    private void playPunchFeedback() {
+        Vibrator vibrator = (Vibrator) getSystemService(VIBRATOR_SERVICE);
+        if (vibrator != null && vibrator.hasVibrator()) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                vibrator.vibrate(VibrationEffect.createOneShot(60, 120));
+            } else {
+                vibrator.vibrate(60);
+            }
+        }
+
+        if (toneGenerator != null) {
+            toneGenerator.startTone(ToneGenerator.TONE_PROP_ACK, 120);
+        }
     }
 
     private TextView addDetail(LinearLayout parent, String title) {
