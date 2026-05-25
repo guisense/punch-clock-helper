@@ -335,7 +335,7 @@ public final class SettingsActivity extends Activity {
         LinearLayout layout = new LinearLayout(this);
         layout.setOrientation(LinearLayout.VERTICAL);
         layout.setPadding(dp(16), dp(16), dp(16), dp(16));
-        layout.setBackgroundColor(color(R.color.panel));
+        layout.setBackground(UiStyle.panel(this));
         LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
@@ -356,6 +356,8 @@ public final class SettingsActivity extends Activity {
         Button button = new Button(this);
         button.setText(value);
         button.setAllCaps(false);
+        button.setTextSize(14);
+        UiStyle.styleSoftButton(button, this, R.color.blue, false);
         return button;
     }
 

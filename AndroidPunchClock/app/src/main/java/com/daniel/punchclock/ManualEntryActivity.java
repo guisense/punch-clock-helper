@@ -58,6 +58,7 @@ public final class ManualEntryActivity extends Activity {
 
         Button save = compactButton("保存補錄");
         save.setTextSize(18);
+        UiStyle.stylePrimaryButton(save, this, R.color.blue);
         save.setOnClickListener(view -> {
             store.saveManualRecord(day, LocalDateTime.of(day, clockIn), LocalDateTime.of(day, clockOut));
             CountdownNotifier.update(this);
@@ -122,7 +123,7 @@ public final class ManualEntryActivity extends Activity {
         LinearLayout layout = new LinearLayout(this);
         layout.setOrientation(LinearLayout.VERTICAL);
         layout.setPadding(dp(16), dp(8), dp(16), dp(8));
-        layout.setBackgroundColor(color(R.color.panel));
+        layout.setBackground(UiStyle.panel(this));
         LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
@@ -143,6 +144,8 @@ public final class ManualEntryActivity extends Activity {
         Button button = new Button(this);
         button.setText(value);
         button.setAllCaps(false);
+        button.setTextSize(14);
+        UiStyle.styleSoftButton(button, this, R.color.blue, false);
         return button;
     }
 

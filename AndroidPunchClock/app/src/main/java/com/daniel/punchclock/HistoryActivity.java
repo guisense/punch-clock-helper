@@ -46,6 +46,8 @@ public final class HistoryActivity extends Activity {
         Button back = new Button(this);
         back.setText("返回");
         back.setAllCaps(false);
+        back.setTextSize(14);
+        UiStyle.styleSoftButton(back, this, R.color.blue, false);
         back.setOnClickListener(view -> finish());
         header.addView(back);
         root.addView(header);
@@ -194,7 +196,7 @@ public final class HistoryActivity extends Activity {
         LinearLayout box = new LinearLayout(this);
         box.setOrientation(LinearLayout.VERTICAL);
         box.setPadding(dp(10), dp(10), dp(10), dp(10));
-        box.setBackground(roundRect(R.color.panel));
+        box.setBackground(UiStyle.panel(this));
         box.addView(text(title, 12, R.color.muted, false));
         TextView valueView = text(value, 18, R.color.text, true);
         valueView.setPadding(0, dp(3), 0, 0);
@@ -206,7 +208,7 @@ public final class HistoryActivity extends Activity {
         LinearLayout layout = new LinearLayout(this);
         layout.setOrientation(LinearLayout.VERTICAL);
         layout.setPadding(dp(16), dp(16), dp(16), dp(16));
-        layout.setBackground(roundRect(R.color.panel));
+        layout.setBackground(UiStyle.panel(this));
         LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
@@ -219,7 +221,8 @@ public final class HistoryActivity extends Activity {
     private GradientDrawable roundRect(int colorId) {
         GradientDrawable drawable = new GradientDrawable();
         drawable.setColor(color(colorId));
-        drawable.setCornerRadius(dp(8));
+        drawable.setCornerRadius(dp(18));
+        drawable.setStroke(dp(1), color(R.color.line));
         return drawable;
     }
 

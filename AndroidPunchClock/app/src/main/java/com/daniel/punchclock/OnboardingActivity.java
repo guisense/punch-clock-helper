@@ -49,6 +49,7 @@ public final class OnboardingActivity extends Activity {
 
         dial = new MinuteDialView(this);
         dial.configure(settings.requiredMinutes(), 1, 16 * 60, this::updateCurrentStepValue);
+        dial.setBackground(UiStyle.softCard(this));
         root.addView(dial, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(300)));
 
         lunchCheck = new CheckBox(this);
@@ -61,6 +62,8 @@ public final class OnboardingActivity extends Activity {
         nextButton = new Button(this);
         nextButton.setAllCaps(false);
         nextButton.setText("下一步");
+        nextButton.setTextSize(17);
+        UiStyle.stylePrimaryButton(nextButton, this, R.color.blue);
         nextButton.setOnClickListener(view -> next());
         LinearLayout.LayoutParams buttonParams = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(56));
         buttonParams.setMargins(0, dp(16), 0, 0);

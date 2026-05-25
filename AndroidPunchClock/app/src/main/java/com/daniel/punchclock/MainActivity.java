@@ -101,8 +101,11 @@ public final class MainActivity extends Activity {
         LinearLayout hero = new LinearLayout(this);
         hero.setOrientation(LinearLayout.VERTICAL);
         hero.setGravity(Gravity.CENTER_HORIZONTAL);
-        hero.setPadding(0, dp(4), 0, dp(22));
-        root.addView(hero);
+        hero.setPadding(dp(18), dp(16), dp(18), dp(22));
+        hero.setBackground(UiStyle.softCard(this));
+        LinearLayout.LayoutParams heroParams = blockParams();
+        heroParams.setMargins(0, 0, 0, dp(14));
+        root.addView(hero, heroParams);
 
         heroLabelText = text("今日打卡", 14, R.color.muted, true);
         heroLabelText.setPadding(0, dp(8), 0, 0);
@@ -305,8 +308,8 @@ public final class MainActivity extends Activity {
     private LinearLayout simpleSection() {
         LinearLayout layout = new LinearLayout(this);
         layout.setOrientation(LinearLayout.VERTICAL);
-        layout.setPadding(0, dp(4), 0, dp(8));
-        layout.setBackgroundColor(color(R.color.panel));
+        layout.setPadding(dp(16), dp(6), dp(16), dp(10));
+        layout.setBackground(UiStyle.panel(this));
         LinearLayout.LayoutParams params = blockParams();
         params.setMargins(0, 0, 0, dp(12));
         layout.setLayoutParams(params);
@@ -356,16 +359,15 @@ public final class MainActivity extends Activity {
         Button button = new Button(this);
         button.setText(value);
         button.setAllCaps(false);
+        button.setTextSize(14);
+        UiStyle.styleSoftButton(button, this, R.color.blue, false);
         return button;
     }
 
     private Button actionButton(String value, int colorId, boolean danger) {
         Button button = compactButton(value);
         button.setTextSize(15);
-        button.setTextColor(danger ? color(colorId) : color(R.color.text));
-        button.setBackground(outlineBackground(colorId, danger));
-        button.setMinHeight(0);
-        button.setMinimumHeight(0);
+        UiStyle.styleSoftButton(button, this, colorId, danger);
         return button;
     }
 
@@ -373,8 +375,9 @@ public final class MainActivity extends Activity {
         ImageButton button = new ImageButton(this);
         button.setImageResource(iconId);
         button.setContentDescription(description);
-        button.setBackgroundColor(0x00000000);
+        button.setBackground(UiStyle.outline(this, R.color.line, true));
         button.setPadding(dp(10), dp(10), dp(10), dp(10));
+        UiStyle.noDefaultButtonShadow(button);
         LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(dp(44), dp(44));
         params.setMargins(dp(6), 0, 0, 0);
         button.setLayoutParams(params);
@@ -382,19 +385,11 @@ public final class MainActivity extends Activity {
     }
 
     private GradientDrawable circleBackground(int colorId) {
-        GradientDrawable drawable = new GradientDrawable();
-        drawable.setShape(GradientDrawable.OVAL);
-        drawable.setColor(color(colorId));
-        return drawable;
+        return UiStyle.circle(this, colorId);
     }
 
     private GradientDrawable outlineBackground(int colorId, boolean stronger) {
-        GradientDrawable drawable = new GradientDrawable();
-        drawable.setShape(GradientDrawable.RECTANGLE);
-        drawable.setCornerRadius(dp(8));
-        drawable.setColor(stronger ? 0xFFFFF1F4 : 0xFFFFFFFF);
-        drawable.setStroke(dp(stronger ? 2 : 1), color(colorId));
-        return drawable;
+        return UiStyle.outline(this, colorId, stronger);
     }
 
     private int colorFor(WorkRecord.Level level) {
