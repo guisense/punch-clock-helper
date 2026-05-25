@@ -43,10 +43,12 @@ public final class MainActivity extends Activity {
         super.onCreate(savedInstanceState);
         store = new AttendanceStore(this);
         settings = new WorkSettings(this);
-        store.ensureDemoData();
         ReminderScheduler.ensureNotificationChannel(this);
         requestNotificationPermission();
         prepareFeedback();
+        if (!settings.onboardingCompleted()) {
+            startActivity(new Intent(this, OnboardingActivity.class));
+        }
         buildUi();
         refresh();
     }

@@ -26,7 +26,7 @@ final class WorkRecord {
 
     LocalDateTime safeClockOut(WorkSettings settings) {
         LocalDateTime planned = plannedClockOut(settings);
-        return planned == null ? null : planned.plusMinutes(2);
+        return planned == null ? null : planned.plusMinutes(settings.safetyBufferMinutes());
     }
 
     long presenceMinutes() {

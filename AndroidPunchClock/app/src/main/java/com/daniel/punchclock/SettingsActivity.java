@@ -1,8 +1,14 @@
 package com.daniel.punchclock;
 
 import android.app.Activity;
+import android.app.AlarmManager;
 import android.app.AlertDialog;
+import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
+import android.provider.Settings;
 import android.view.Gravity;
 import android.widget.Button;
 import android.widget.CheckBox;
@@ -14,7 +20,10 @@ public final class SettingsActivity extends Activity {
     private WorkSettings settings;
     private TextView requiredValue;
     private TextView lunchValue;
+    private TextView bufferValue;
     private TextView targetValue;
+    private TextView notificationStatus;
+    private TextView exactAlarmStatus;
     private CheckBox lunchCheck;
 
     @Override
@@ -72,6 +81,12 @@ public final class SettingsActivity extends Activity {
         targetValue = text("", 16, R.color.blue, true);
         targetRow.addView(targetValue);
         workPanel.addView(targetRow);
+
+        LinearLayout bufferRow = settingRow("安全緩衝");
+        bufferValue = text("", 16, R.color.text, true);
+        bufferRow.addView(bufferValue);
+        bufferRow.setOnClickListener(view -> editMinutes("安全緩衝", settings.safetyBufferMinutes(), 0, 60, value -> settings.setSafetyBufferMinutes(value)));
+        workPanel.addView(bufferRow);
         root.addView(workPanel);
 
         LinearLayout dataPanel = panel();
@@ -87,6 +102,22 @@ public final class SettingsActivity extends Activity {
         holiday.setPadding(0, dp(10), 0, 0);
         holidayPanel.addView(holiday);
         root.addView(holidayPanel);
+
+        LinearLayout reliabilityPanel = panel();
+        reliabilityPanel.addView(text("提醒可靠性檢查", 19, R.color.text, true));
+        notificationStatus = addStatusRow(reliabilityPanel, "通知權限");
+        exactAlarmStatus = addStatusRow(reliabilityPanel, "鬧鐘提醒");
+        TextView colorOs = text("ColorOS：建議允許通知、鬧鐘提醒、自啟動，並取消電池限制。", 15, R.color.muted, false);
+        colorOs.setPadding(0, dp(10), 0, 0);
+        reliabilityPanel.addView(colorOs);
+        TextView widget = text("桌面小組件與常駐通知會在打卡、補錄、設定變更時刷新。", 15, R.color.muted, false);
+        widget.setPadding(0, dp(8), 0, 0);
+        reliabilityPanel.addView(widget);
+
+        Button openNotification = compactButton("打開通知設定");
+        openNotification.setOnClickListener(view -> openAppSettings());
+        reliabilityPanel.addView(openNotification, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(50)));
+        root.addView(reliabilityPanel);
 
         setContentView(scrollView);
     }
@@ -142,7 +173,35 @@ public final class SettingsActivity extends Activity {
         requiredValue.setText(settings.requiredText());
         lunchValue.setText(settings.lunchText());
         targetValue.setText(settings.targetText());
+        bufferValue.setText(settings.safetyBufferText());
         lunchCheck.setChecked(settings.deductLunch());
+        refreshReliability();
+    }
+
+    private TextView addStatusRow(LinearLayout parent, String title) {
+        LinearLayout row = settingRow(title);
+        TextView value = text("", 16, R.color.text, true);
+        row.addView(value);
+        parent.addView(row);
+        return value;
+    }
+
+    private void refreshReliability() {
+        boolean notifications = Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU
+                || checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED;
+        notificationStatus.setText(notifications ? "已允許" : "未允許");
+        notificationStatus.setTextColor(color(notifications ? R.color.green : R.color.red));
+
+        AlarmManager alarmManager = (AlarmManager) getSystemService(ALARM_SERVICE);
+        boolean exactAlarm = Build.VERSION.SDK_INT < Build.VERSION_CODES.S || alarmManager.canScheduleExactAlarms();
+        exactAlarmStatus.setText(exactAlarm ? "可用" : "需允許");
+        exactAlarmStatus.setTextColor(color(exactAlarm ? R.color.green : R.color.red));
+    }
+
+    private void openAppSettings() {
+        Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+        intent.setData(Uri.parse("package:" + getPackageName()));
+        startActivity(intent);
     }
 
     private LinearLayout panel() {
