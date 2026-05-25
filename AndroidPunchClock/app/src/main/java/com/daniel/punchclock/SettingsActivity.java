@@ -70,13 +70,13 @@ public final class SettingsActivity extends Activity {
         workPanel.addView(text("工時計算", 19, R.color.text, true));
 
         LinearLayout regionRow = settingRow("所在地區");
-        regionValue = text("", 16, R.color.text, true);
+        regionValue = editableValue();
         regionRow.addView(regionValue);
         regionRow.setOnClickListener(view -> chooseRegion());
         workPanel.addView(regionRow);
 
         LinearLayout requiredRow = settingRow("每日工時");
-        requiredValue = text("", 16, R.color.text, true);
+        requiredValue = editableValue();
         requiredRow.addView(requiredValue);
         requiredRow.setOnClickListener(view -> editMinutes("每日工時", settings.requiredMinutes(), 1, 16 * 60, value -> settings.setRequiredMinutes(value)));
         workPanel.addView(requiredRow);
@@ -93,7 +93,7 @@ public final class SettingsActivity extends Activity {
         workPanel.addView(lunchCheck);
 
         LinearLayout lunchRow = settingRow("午休時長");
-        lunchValue = text("", 16, R.color.text, true);
+        lunchValue = editableValue();
         lunchRow.addView(lunchValue);
         lunchRow.setOnClickListener(view -> editMinutes("午休時長", settings.lunchMinutes(), 0, 180, value -> settings.setLunchMinutes(value)));
         workPanel.addView(lunchRow);
@@ -104,7 +104,7 @@ public final class SettingsActivity extends Activity {
         workPanel.addView(targetRow);
 
         LinearLayout bufferRow = settingRow("安全緩衝");
-        bufferValue = text("", 16, R.color.text, true);
+        bufferValue = editableValue();
         bufferRow.addView(bufferValue);
         bufferRow.setOnClickListener(view -> editMinutes("安全緩衝", settings.safetyBufferMinutes(), 0, 60, value -> settings.setSafetyBufferMinutes(value)));
         workPanel.addView(bufferRow);
@@ -258,11 +258,11 @@ public final class SettingsActivity extends Activity {
     }
 
     private void refresh() {
-        regionValue.setText(settings.regionLabel());
-        requiredValue.setText(settings.requiredText());
-        lunchValue.setText(settings.lunchText());
+        regionValue.setText(editableText(settings.regionLabel()));
+        requiredValue.setText(editableText(settings.requiredText()));
+        lunchValue.setText(editableText(settings.lunchText()));
         targetValue.setText(settings.targetText());
-        bufferValue.setText(settings.safetyBufferText());
+        bufferValue.setText(editableText(settings.safetyBufferText()));
         holidayStatusText.setText("目前地區：" + settings.regionLabel()
                 + "\n目前狀態：" + settings.holidayStatus()
                 + "\n最後更新：" + settings.holidayUpdatedAt());
@@ -401,6 +401,19 @@ public final class SettingsActivity extends Activity {
         button.setTextSize(14);
         UiStyle.styleSoftButton(button, this, R.color.blue, false);
         return button;
+    }
+
+    private TextView editableValue() {
+        TextView value = text("", 15, R.color.widget_chip_text, true);
+        value.setGravity(Gravity.CENTER);
+        value.setPadding(dp(12), dp(5), dp(10), dp(5));
+        value.setBackground(UiStyle.pill(this, R.color.widget_chip_bg));
+        value.setMinWidth(dp(92));
+        return value;
+    }
+
+    private String editableText(String value) {
+        return value + "  ›";
     }
 
     private TextView text(String value, int sp, int colorId, boolean bold) {
