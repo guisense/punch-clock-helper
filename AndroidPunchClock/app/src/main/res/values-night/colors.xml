@@ -11,4 +11,11 @@
     <color name="line">#343C52</color>
     <color name="lavender">#D0C6FF</color>
     <color name="aqua">#8DEBF5</color>
+    <color name="widget_title">#B5C0D1</color>
+    <color name="widget_chip_text">#C7D8FF</color>
+    <color name="widget_chip_bg">#27344D</color>
+    <color name="widget_success_bg">#1E3B35</color>
+    <color name="widget_card_start">#1C2333</color>
+    <color name="widget_card_end">#202B39</color>
+    <color name="widget_card_stroke">#344057</color>
 </resources>

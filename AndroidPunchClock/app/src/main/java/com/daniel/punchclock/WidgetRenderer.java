@@ -77,9 +77,9 @@ final class WidgetRenderer {
 
     private static void renderLarge(RemoteViews views, WorkRecord record, WorkSettings settings) {
         if (record.clockIn == null) {
-            views.setTextViewText(R.id.widget_title, "今日摘要");
+            views.setTextViewText(R.id.widget_title, "上班時間");
             views.setTextViewText(R.id.widget_time, "--:--");
-            views.setTextViewText(R.id.widget_subtitle, "尚未上班");
+            views.setTextViewText(R.id.widget_subtitle, "尚未打卡上班");
             views.setTextViewText(R.id.widget_extra, "工時目標 " + Formatters.workedTime(settings.requiredMinutes()));
             views.setTextViewText(R.id.widget_detail_one, "安全緩衝 " + settings.safetyBufferText());
             views.setTextViewText(R.id.widget_detail_two, settings.deductLunch() ? "午休扣除 " + Formatters.remainingMinutes(settings.lunchMinutes()) : "不扣除午休");
@@ -87,21 +87,21 @@ final class WidgetRenderer {
         }
 
         if (record.clockOut != null) {
-            views.setTextViewText(R.id.widget_title, "今日摘要");
+            views.setTextViewText(R.id.widget_title, "上班時間");
             views.setTextViewText(R.id.widget_time, Formatters.time(record.clockIn));
-            views.setTextViewText(R.id.widget_subtitle, "已下班 " + Formatters.time(record.clockOut));
-            views.setTextViewText(R.id.widget_extra, "實際 " + Formatters.workedTime(record.workedMinutes(settings)));
-            views.setTextViewText(R.id.widget_detail_one, "安全下班 " + Formatters.time(record.safeClockOut(settings)));
+            views.setTextViewText(R.id.widget_subtitle, "今日已打卡上班");
+            views.setTextViewText(R.id.widget_extra, "下班時間 " + Formatters.time(record.clockOut));
+            views.setTextViewText(R.id.widget_detail_one, "實際工時 " + Formatters.workedTime(record.workedMinutes(settings)));
             views.setTextViewText(R.id.widget_detail_two, statusText(record, settings));
             return;
         }
 
         LocalDateTime safe = record.safeClockOut(settings);
-        views.setTextViewText(R.id.widget_title, "今日摘要");
+        views.setTextViewText(R.id.widget_title, "上班時間");
         views.setTextViewText(R.id.widget_time, Formatters.time(record.clockIn));
-        views.setTextViewText(R.id.widget_subtitle, "安全下班 " + Formatters.time(safe));
-        views.setTextViewText(R.id.widget_extra, CountdownNotifier.countdownText(safe));
-        views.setTextViewText(R.id.widget_detail_one, "工時目標 " + Formatters.workedTime(settings.requiredMinutes()));
+        views.setTextViewText(R.id.widget_subtitle, "今日已打卡上班");
+        views.setTextViewText(R.id.widget_extra, "安全下班 " + Formatters.time(safe));
+        views.setTextViewText(R.id.widget_detail_one, CountdownNotifier.countdownText(safe));
         views.setTextViewText(R.id.widget_detail_two, "安全緩衝 " + settings.safetyBufferText());
     }
 
