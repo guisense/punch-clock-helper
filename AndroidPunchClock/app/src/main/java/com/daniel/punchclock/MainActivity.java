@@ -77,7 +77,7 @@ public final class MainActivity extends Activity {
 
         root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
-        root.setPadding(dp(22), dp(18), dp(22), dp(18));
+        root.setPadding(dp(22), UiStyle.topInset(this), dp(22), dp(18));
         root.setBackgroundColor(color(R.color.surface));
         scrollView.addView(root);
 

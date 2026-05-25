@@ -78,6 +78,12 @@ final class UiStyle {
         view.setStateListAnimator(null);
     }
 
+    static int topInset(Context context) {
+        int resourceId = context.getResources().getIdentifier("status_bar_height", "dimen", "android");
+        int statusBar = resourceId > 0 ? context.getResources().getDimensionPixelSize(resourceId) : dp(context, 24);
+        return statusBar + dp(context, 18);
+    }
+
     private static int softFillColor(int color) {
         return mix(color, 0xFFFFFFFF, 0.84f);
     }

@@ -51,7 +51,7 @@ public final class SettingsActivity extends Activity {
         ScrollView scrollView = new ScrollView(this);
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
-        root.setPadding(dp(20), dp(18), dp(20), dp(24));
+        root.setPadding(dp(20), UiStyle.topInset(this), dp(20), dp(24));
         root.setBackgroundColor(color(R.color.surface));
         scrollView.addView(root);
 
@@ -108,19 +108,21 @@ public final class SettingsActivity extends Activity {
         privacy.setPadding(0, dp(10), 0, 0);
         dataPanel.addView(privacy);
         LinearLayout exportRow = row();
-        exportRow.setPadding(0, dp(12), 0, 0);
+        exportRow.setPadding(0, dp(18), 0, 0);
         Button csvButton = compactButton("匯出 CSV");
         csvButton.setOnClickListener(view -> createDocument(EXPORT_CSV, "text/csv", "punch-clock.csv"));
-        exportRow.addView(csvButton, new LinearLayout.LayoutParams(0, dp(50), 1));
+        exportRow.addView(csvButton, new LinearLayout.LayoutParams(0, dp(44), 1));
         Button jsonButton = compactButton("備份 JSON");
         jsonButton.setOnClickListener(view -> createDocument(EXPORT_JSON, "application/json", "punch-clock-backup.json"));
-        LinearLayout.LayoutParams jsonParams = new LinearLayout.LayoutParams(0, dp(50), 1);
-        jsonParams.setMargins(dp(10), 0, 0, 0);
+        LinearLayout.LayoutParams jsonParams = new LinearLayout.LayoutParams(0, dp(44), 1);
+        jsonParams.setMargins(dp(12), 0, 0, 0);
         exportRow.addView(jsonButton, jsonParams);
         dataPanel.addView(exportRow);
         Button importButton = compactButton("恢復 JSON 備份");
         importButton.setOnClickListener(view -> openDocument());
-        dataPanel.addView(importButton, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(50)));
+        LinearLayout.LayoutParams importParams = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(44));
+        importParams.setMargins(0, dp(12), 0, 0);
+        dataPanel.addView(importButton, importParams);
         root.addView(dataPanel);
 
         LinearLayout holidayPanel = panel();
@@ -130,7 +132,9 @@ public final class SettingsActivity extends Activity {
         holidayPanel.addView(holiday);
         Button updateHoliday = compactButton("從 GitHub 更新節假日");
         updateHoliday.setOnClickListener(view -> updateHolidays());
-        holidayPanel.addView(updateHoliday, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(50)));
+        LinearLayout.LayoutParams updateHolidayParams = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(44));
+        updateHolidayParams.setMargins(0, dp(14), 0, 0);
+        holidayPanel.addView(updateHoliday, updateHolidayParams);
         root.addView(holidayPanel);
 
         LinearLayout reliabilityPanel = panel();
@@ -146,7 +150,9 @@ public final class SettingsActivity extends Activity {
 
         Button openNotification = compactButton("打開通知設定");
         openNotification.setOnClickListener(view -> openAppSettings());
-        reliabilityPanel.addView(openNotification, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(50)));
+        LinearLayout.LayoutParams notificationParams = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(44));
+        notificationParams.setMargins(0, dp(14), 0, 0);
+        reliabilityPanel.addView(openNotification, notificationParams);
         root.addView(reliabilityPanel);
 
         setContentView(scrollView);

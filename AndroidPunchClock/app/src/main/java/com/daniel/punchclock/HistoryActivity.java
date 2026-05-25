@@ -35,7 +35,7 @@ public final class HistoryActivity extends Activity {
         ScrollView scrollView = new ScrollView(this);
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
-        root.setPadding(dp(20), dp(18), dp(20), dp(20));
+        root.setPadding(dp(20), UiStyle.topInset(this), dp(20), dp(20));
         root.setBackgroundColor(color(R.color.surface));
         scrollView.addView(root);
 

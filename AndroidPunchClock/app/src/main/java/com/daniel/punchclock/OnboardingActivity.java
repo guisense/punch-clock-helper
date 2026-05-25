@@ -30,7 +30,7 @@ public final class OnboardingActivity extends Activity {
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
         root.setGravity(Gravity.CENTER_HORIZONTAL);
-        root.setPadding(dp(24), dp(32), dp(24), dp(24));
+        root.setPadding(dp(24), UiStyle.topInset(this), dp(24), dp(24));
         root.setBackgroundColor(color(R.color.surface));
 
         title = text("", 28, R.color.text, true);
