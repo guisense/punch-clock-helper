@@ -3,7 +3,7 @@
     android:description="@string/widget_description"
     android:initialLayout="@layout/widget_countdown_small"
     android:minWidth="120dp"
-    android:minHeight="80dp"
+    android:minHeight="96dp"
     android:previewLayout="@layout/widget_countdown_small"
     android:resizeMode="horizontal|vertical"
     android:updatePeriodMillis="1800000"

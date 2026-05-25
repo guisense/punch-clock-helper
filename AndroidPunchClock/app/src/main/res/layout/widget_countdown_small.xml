@@ -6,7 +6,7 @@
     android:background="@drawable/widget_card_bg"
     android:gravity="center_vertical"
     android:orientation="vertical"
-    android:padding="14dp">
+    android:padding="10dp">
 
     <TextView
         android:id="@+id/widget_title"
@@ -14,8 +14,9 @@
         android:layout_height="wrap_content"
         android:text="安全下班"
         android:textColor="@color/widget_title"
-        android:textSize="12sp"
-        android:textStyle="bold" />
+        android:textSize="11sp"
+        android:textStyle="bold"
+        android:maxLines="1" />
 
     <TextView
         android:id="@+id/widget_time"
@@ -24,8 +25,9 @@
         android:layout_marginTop="2dp"
         android:text="--:--"
         android:textColor="@color/text"
-        android:textSize="30sp"
-        android:textStyle="bold" />
+        android:textSize="26sp"
+        android:textStyle="bold"
+        android:maxLines="1" />
 
     <TextView
         android:id="@+id/widget_subtitle"
@@ -33,12 +35,13 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="4dp"
         android:background="@drawable/widget_chip_bg"
-        android:paddingLeft="8dp"
-        android:paddingTop="3dp"
-        android:paddingRight="8dp"
-        android:paddingBottom="3dp"
+        android:paddingLeft="7dp"
+        android:paddingTop="2dp"
+        android:paddingRight="7dp"
+        android:paddingBottom="2dp"
         android:text="尚未上班"
         android:textColor="@color/widget_chip_text"
-        android:textSize="11sp"
-        android:textStyle="bold" />
+        android:textSize="10sp"
+        android:textStyle="bold"
+        android:maxLines="1" />
 </LinearLayout>
