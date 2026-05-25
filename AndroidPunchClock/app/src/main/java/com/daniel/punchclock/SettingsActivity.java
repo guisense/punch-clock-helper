@@ -16,8 +16,20 @@ import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
 
+import org.json.JSONObject;
+
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
+
 public final class SettingsActivity extends Activity {
+    private static final int EXPORT_CSV = 201;
+    private static final int EXPORT_JSON = 202;
+    private static final int IMPORT_JSON = 203;
+
     private WorkSettings settings;
+    private AttendanceStore store;
     private TextView requiredValue;
     private TextView lunchValue;
     private TextView bufferValue;
@@ -30,6 +42,7 @@ public final class SettingsActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         settings = new WorkSettings(this);
+        store = new AttendanceStore(this);
         buildUi();
         refresh();
     }
@@ -94,13 +107,30 @@ public final class SettingsActivity extends Activity {
         TextView privacy = text("所有打卡記錄與設定只保存在本機，不會上傳到服務器。卸載 App 可能會清除本機資料。", 15, R.color.muted, false);
         privacy.setPadding(0, dp(10), 0, 0);
         dataPanel.addView(privacy);
+        LinearLayout exportRow = row();
+        exportRow.setPadding(0, dp(12), 0, 0);
+        Button csvButton = compactButton("匯出 CSV");
+        csvButton.setOnClickListener(view -> createDocument(EXPORT_CSV, "text/csv", "punch-clock.csv"));
+        exportRow.addView(csvButton, new LinearLayout.LayoutParams(0, dp(50), 1));
+        Button jsonButton = compactButton("備份 JSON");
+        jsonButton.setOnClickListener(view -> createDocument(EXPORT_JSON, "application/json", "punch-clock-backup.json"));
+        LinearLayout.LayoutParams jsonParams = new LinearLayout.LayoutParams(0, dp(50), 1);
+        jsonParams.setMargins(dp(10), 0, 0, 0);
+        exportRow.addView(jsonButton, jsonParams);
+        dataPanel.addView(exportRow);
+        Button importButton = compactButton("恢復 JSON 備份");
+        importButton.setOnClickListener(view -> openDocument());
+        dataPanel.addView(importButton, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(50)));
         root.addView(dataPanel);
 
         LinearLayout holidayPanel = panel();
         holidayPanel.addView(text("節假日規則", 19, R.color.text, true));
-        TextView holiday = text("目前內建 2026 年中國法定節假日與調休日。後續會加入線上更新或手動導入。", 15, R.color.muted, false);
+        TextView holiday = text("目前狀態：" + settings.holidayStatus() + "\n最後更新：" + settings.holidayUpdatedAt(), 15, R.color.muted, false);
         holiday.setPadding(0, dp(10), 0, 0);
         holidayPanel.addView(holiday);
+        Button updateHoliday = compactButton("從 GitHub 更新節假日");
+        updateHoliday.setOnClickListener(view -> updateHolidays());
+        holidayPanel.addView(updateHoliday, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(50)));
         root.addView(holidayPanel);
 
         LinearLayout reliabilityPanel = panel();
@@ -120,6 +150,26 @@ public final class SettingsActivity extends Activity {
         root.addView(reliabilityPanel);
 
         setContentView(scrollView);
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (resultCode != RESULT_OK || data == null || data.getData() == null) {
+            return;
+        }
+        Uri uri = data.getData();
+        try {
+            if (requestCode == EXPORT_CSV) {
+                writeText(uri, BackupCodec.toCsv(store, settings));
+            } else if (requestCode == EXPORT_JSON) {
+                writeText(uri, BackupCodec.toJson(store, settings));
+            } else if (requestCode == IMPORT_JSON) {
+                confirmImport(readText(uri));
+            }
+        } catch (Exception error) {
+            showMessage("操作失敗", error.getMessage());
+        }
     }
 
     private void editMinutes(String title, int current, int min, int max, MinuteSetter setter) {
@@ -202,6 +252,83 @@ public final class SettingsActivity extends Activity {
         Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
         intent.setData(Uri.parse("package:" + getPackageName()));
         startActivity(intent);
+    }
+
+    private void createDocument(int requestCode, String mimeType, String name) {
+        Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+        intent.setType(mimeType);
+        intent.putExtra(Intent.EXTRA_TITLE, name);
+        startActivityForResult(intent, requestCode);
+    }
+
+    private void openDocument() {
+        Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+        intent.setType("application/json");
+        startActivityForResult(intent, IMPORT_JSON);
+    }
+
+    private void confirmImport(String json) {
+        new AlertDialog.Builder(this)
+                .setTitle("恢復備份？")
+                .setMessage("這會覆蓋本機所有打卡記錄與設定。")
+                .setNegativeButton("取消", null)
+                .setPositiveButton("恢復", (dialog, which) -> {
+                    try {
+                        JSONObject root = new JSONObject(json);
+                        settings.applyJson(root.optJSONObject("settings"));
+                        store.replaceRecords(BackupCodec.recordsFromJson(root));
+                        CountdownNotifier.update(this);
+                        refresh();
+                        showMessage("恢復完成", "記錄與設定已更新。");
+                    } catch (Exception error) {
+                        showMessage("恢復失敗", error.getMessage());
+                    }
+                })
+                .show();
+    }
+
+    private void updateHolidays() {
+        new Thread(() -> {
+            String result = HolidayUpdater.updateFromGitHub(this);
+            runOnUiThread(() -> {
+                refresh();
+                showMessage("節假日更新", result);
+            });
+        }).start();
+    }
+
+    private void writeText(Uri uri, String value) throws Exception {
+        try (OutputStream stream = getContentResolver().openOutputStream(uri)) {
+            if (stream == null) {
+                throw new IllegalStateException("無法打開文件");
+            }
+            stream.write(value.getBytes(StandardCharsets.UTF_8));
+        }
+    }
+
+    private String readText(Uri uri) throws Exception {
+        try (InputStream stream = getContentResolver().openInputStream(uri)) {
+            if (stream == null) {
+                throw new IllegalStateException("無法讀取文件");
+            }
+            ByteArrayOutputStream output = new ByteArrayOutputStream();
+            byte[] buffer = new byte[4096];
+            int read;
+            while ((read = stream.read(buffer)) != -1) {
+                output.write(buffer, 0, read);
+            }
+            return output.toString("UTF-8");
+        }
+    }
+
+    private void showMessage(String title, String message) {
+        new AlertDialog.Builder(this)
+                .setTitle(title)
+                .setMessage(message == null ? "" : message)
+                .setPositiveButton("知道了", null)
+                .show();
     }
 
     private LinearLayout panel() {

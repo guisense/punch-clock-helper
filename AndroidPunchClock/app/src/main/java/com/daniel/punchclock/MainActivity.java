@@ -14,6 +14,7 @@ import android.os.Bundle;
 import android.os.VibrationEffect;
 import android.os.Vibrator;
 import android.view.Gravity;
+import android.view.View;
 import android.widget.ImageButton;
 import android.widget.Button;
 import android.widget.LinearLayout;
@@ -36,6 +37,9 @@ public final class MainActivity extends Activity {
     private TextView clockOutText;
     private TextView workedText;
     private Button punchButton;
+    private LinearLayout undoRow;
+    private TextView undoText;
+    private String pendingUndo;
     private ToneGenerator toneGenerator;
 
     @Override
@@ -126,6 +130,17 @@ public final class MainActivity extends Activity {
         actionHintText.setPadding(0, dp(10), 0, 0);
         hero.addView(actionHintText);
 
+        undoRow = row();
+        undoRow.setGravity(Gravity.CENTER);
+        undoRow.setPadding(0, dp(8), 0, 0);
+        undoText = text("", 14, R.color.muted, false);
+        undoRow.addView(undoText);
+        Button undoButton = compactButton("撤銷");
+        undoButton.setOnClickListener(view -> undoLastPunch());
+        undoRow.addView(undoButton);
+        undoRow.setVisibility(View.GONE);
+        hero.addView(undoRow);
+
         LinearLayout detail = simpleSection();
         clockInText = addDetail(detail, "上班時間");
         clockOutText = addDetail(detail, "下班時間");
@@ -156,10 +171,12 @@ public final class MainActivity extends Activity {
             ReminderScheduler.scheduleSafeClockOut(this, store.todayRecord(), settings);
             CountdownNotifier.update(this);
             playPunchFeedback();
+            showUndo("clockIn", "已記錄上班");
         } else {
             store.recordClockOut(now);
             CountdownNotifier.cancel(this);
             playPunchFeedback();
+            showUndo("clockOut", "已記錄下班");
         }
 
         refresh();
@@ -177,6 +194,31 @@ public final class MainActivity extends Activity {
                     refresh();
                 })
                 .show();
+    }
+
+    private void showUndo(String action, String message) {
+        pendingUndo = action;
+        undoText.setText(message);
+        undoRow.setVisibility(View.VISIBLE);
+        undoRow.postDelayed(() -> {
+            pendingUndo = null;
+            undoRow.setVisibility(View.GONE);
+        }, 7000);
+    }
+
+    private void undoLastPunch() {
+        WorkRecord record = store.todayRecord();
+        if ("clockOut".equals(pendingUndo)) {
+            store.clearClockOut(record.day);
+            CountdownNotifier.update(this);
+        } else if ("clockIn".equals(pendingUndo)) {
+            store.clearClockIn(record.day);
+            ReminderScheduler.cancelToday(this);
+            CountdownNotifier.cancel(this);
+        }
+        pendingUndo = null;
+        undoRow.setVisibility(View.GONE);
+        refresh();
     }
 
     private void refresh() {

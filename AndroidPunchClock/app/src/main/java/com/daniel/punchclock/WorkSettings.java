@@ -3,6 +3,9 @@ package com.daniel.punchclock;
 import android.content.Context;
 import android.content.SharedPreferences;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
 final class WorkSettings {
     private static final String PREFS = "work_settings";
     private static final String REQUIRED_MINUTES = "required_minutes";
@@ -76,6 +79,39 @@ final class WorkSettings {
                 .putString(HOLIDAY_UPDATED_AT, updatedAt)
                 .putString(HOLIDAY_STATUS, status)
                 .apply();
+    }
+
+    JSONObject toJson() throws JSONException {
+        JSONObject object = new JSONObject();
+        object.put("requiredMinutes", requiredMinutes());
+        object.put("deductLunch", deductLunch());
+        object.put("lunchMinutes", lunchMinutes());
+        object.put("safetyBufferMinutes", safetyBufferMinutes());
+        object.put("onboardingCompleted", onboardingCompleted());
+        return object;
+    }
+
+    void applyJson(JSONObject object) {
+        if (object == null) {
+            return;
+        }
+        SharedPreferences.Editor editor = prefs.edit();
+        if (object.has("requiredMinutes")) {
+            editor.putInt(REQUIRED_MINUTES, clamp(object.optInt("requiredMinutes", requiredMinutes()), 1, 16 * 60));
+        }
+        if (object.has("deductLunch")) {
+            editor.putBoolean(DEDUCT_LUNCH, object.optBoolean("deductLunch", deductLunch()));
+        }
+        if (object.has("lunchMinutes")) {
+            editor.putInt(LUNCH_MINUTES, clamp(object.optInt("lunchMinutes", lunchMinutes()), 0, 180));
+        }
+        if (object.has("safetyBufferMinutes")) {
+            editor.putInt(SAFETY_BUFFER_MINUTES, clamp(object.optInt("safetyBufferMinutes", safetyBufferMinutes()), 0, 60));
+        }
+        if (object.has("onboardingCompleted")) {
+            editor.putBoolean(ONBOARDING_COMPLETED, object.optBoolean("onboardingCompleted", onboardingCompleted()));
+        }
+        editor.apply();
     }
 
     String requiredText() {

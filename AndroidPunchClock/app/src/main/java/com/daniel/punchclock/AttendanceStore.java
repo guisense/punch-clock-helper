@@ -57,6 +57,10 @@ final class AttendanceStore {
         return copy;
     }
 
+    List<WorkRecord> allRecords() {
+        return new ArrayList<>(records);
+    }
+
     List<WorkRecord> recordsBetween(LocalDate start, LocalDate end) {
         ArrayList<WorkRecord> copy = new ArrayList<>();
         for (WorkRecord record : records) {
@@ -88,6 +92,23 @@ final class AttendanceStore {
         WorkRecord record = recordFor(day);
         record.clockIn = clockIn;
         record.clockOut = clockOut;
+        save();
+    }
+
+    void clearClockIn(LocalDate day) {
+        records.removeIf(record -> record.day.equals(day));
+        save();
+    }
+
+    void clearClockOut(LocalDate day) {
+        WorkRecord record = recordFor(day);
+        record.clockOut = null;
+        save();
+    }
+
+    void replaceRecords(List<WorkRecord> newRecords) {
+        records.clear();
+        records.addAll(newRecords);
         save();
     }
 

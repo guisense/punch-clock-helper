@@ -27,6 +27,7 @@ public final class HistoryActivity extends Activity {
         super.onCreate(savedInstanceState);
         store = new AttendanceStore(this);
         settings = new WorkSettings(this);
+        WorkdayPolicy.loadExternalRules(this);
         buildUi();
     }
 
