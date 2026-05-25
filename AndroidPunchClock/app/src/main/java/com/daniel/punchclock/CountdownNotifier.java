@@ -29,14 +29,14 @@ final class CountdownNotifier {
 
         if (record.clockIn == null || record.clockOut != null) {
             cancel(context);
-            CountdownWidgetProvider.updateAll(context);
+            updateWidgets(context);
             return;
         }
 
         LocalDateTime safe = record.safeClockOut(settings);
         if (safe == null) {
             cancel(context);
-            CountdownWidgetProvider.updateAll(context);
+            updateWidgets(context);
             return;
         }
 
@@ -57,7 +57,7 @@ final class CountdownNotifier {
         }
 
         scheduleNextUpdate(context);
-        CountdownWidgetProvider.updateAll(context);
+        updateWidgets(context);
     }
 
     static void cancel(Context context) {
@@ -66,7 +66,13 @@ final class CountdownNotifier {
 
         AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
         alarmManager.cancel(updateIntent(context));
+        updateWidgets(context);
+    }
+
+    static void updateWidgets(Context context) {
         CountdownWidgetProvider.updateAll(context);
+        CountdownWidgetSmallProvider.updateAll(context);
+        CountdownWidgetLargeProvider.updateAll(context);
     }
 
     static String countdownText(LocalDateTime safe) {
