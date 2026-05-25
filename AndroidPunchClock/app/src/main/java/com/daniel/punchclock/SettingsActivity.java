@@ -34,8 +34,10 @@ public final class SettingsActivity extends Activity {
     private TextView lunchValue;
     private TextView bufferValue;
     private TextView targetValue;
+    private TextView regionValue;
     private TextView notificationStatus;
     private TextView exactAlarmStatus;
+    private TextView holidayStatusText;
     private CheckBox lunchCheck;
 
     @Override
@@ -66,6 +68,12 @@ public final class SettingsActivity extends Activity {
 
         LinearLayout workPanel = panel();
         workPanel.addView(text("工時計算", 19, R.color.text, true));
+
+        LinearLayout regionRow = settingRow("所在地區");
+        regionValue = text("", 16, R.color.text, true);
+        regionRow.addView(regionValue);
+        regionRow.setOnClickListener(view -> chooseRegion());
+        workPanel.addView(regionRow);
 
         LinearLayout requiredRow = settingRow("每日工時");
         requiredValue = text("", 16, R.color.text, true);
@@ -127,9 +135,9 @@ public final class SettingsActivity extends Activity {
 
         LinearLayout holidayPanel = panel();
         holidayPanel.addView(text("節假日規則", 19, R.color.text, true));
-        TextView holiday = text("目前狀態：" + settings.holidayStatus() + "\n最後更新：" + settings.holidayUpdatedAt(), 15, R.color.muted, false);
-        holiday.setPadding(0, dp(10), 0, 0);
-        holidayPanel.addView(holiday);
+        holidayStatusText = text("", 15, R.color.muted, false);
+        holidayStatusText.setPadding(0, dp(10), 0, 0);
+        holidayPanel.addView(holidayStatusText);
         Button updateHoliday = compactButton("從 GitHub 更新節假日");
         updateHoliday.setOnClickListener(view -> updateHolidays());
         LinearLayout.LayoutParams updateHolidayParams = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(44));
@@ -207,6 +215,30 @@ public final class SettingsActivity extends Activity {
                 .show();
     }
 
+    private void chooseRegion() {
+        int checked = 0;
+        String current = settings.region();
+        for (int index = 0; index < WorkdayPolicy.REGIONS.length; index++) {
+            if (WorkdayPolicy.REGIONS[index].equals(current)) {
+                checked = index;
+                break;
+            }
+        }
+
+        new AlertDialog.Builder(this)
+                .setTitle("選擇所在地區")
+                .setSingleChoiceItems(WorkdayPolicy.REGION_LABELS, checked, (dialog, which) -> {
+                    settings.setRegion(WorkdayPolicy.REGIONS[which]);
+                    settings.setHolidayUpdateStatus("尚未更新", settings.regionLabel() + " 使用內建規則");
+                    WorkdayPolicy.loadExternalRules(this, settings.region());
+                    CountdownNotifier.update(this);
+                    refresh();
+                    dialog.dismiss();
+                })
+                .setNegativeButton("取消", null)
+                .show();
+    }
+
     private LinearLayout settingRow(String title) {
         LinearLayout row = row();
         row.setPadding(0, dp(14), 0, dp(4));
@@ -226,10 +258,14 @@ public final class SettingsActivity extends Activity {
     }
 
     private void refresh() {
+        regionValue.setText(settings.regionLabel());
         requiredValue.setText(settings.requiredText());
         lunchValue.setText(settings.lunchText());
         targetValue.setText(settings.targetText());
         bufferValue.setText(settings.safetyBufferText());
+        holidayStatusText.setText("目前地區：" + settings.regionLabel()
+                + "\n目前狀態：" + settings.holidayStatus()
+                + "\n最後更新：" + settings.holidayUpdatedAt());
         lunchCheck.setChecked(settings.deductLunch());
         refreshReliability();
     }

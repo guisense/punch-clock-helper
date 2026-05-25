@@ -15,6 +15,7 @@ final class WorkSettings {
     private static final String ONBOARDING_COMPLETED = "onboarding_completed";
     private static final String HOLIDAY_UPDATED_AT = "holiday_updated_at";
     private static final String HOLIDAY_STATUS = "holiday_status";
+    private static final String REGION = "region";
 
     private final SharedPreferences prefs;
 
@@ -54,6 +55,14 @@ final class WorkSettings {
         return prefs.getString(HOLIDAY_STATUS, "使用內建規則");
     }
 
+    String region() {
+        return prefs.getString(REGION, WorkdayPolicy.REGION_CN);
+    }
+
+    String regionLabel() {
+        return WorkdayPolicy.regionLabel(region());
+    }
+
     void setRequiredMinutes(int minutes) {
         prefs.edit().putInt(REQUIRED_MINUTES, clamp(minutes, 1, 16 * 60)).apply();
     }
@@ -81,6 +90,10 @@ final class WorkSettings {
                 .apply();
     }
 
+    void setRegion(String region) {
+        prefs.edit().putString(REGION, WorkdayPolicy.normalizeRegion(region)).apply();
+    }
+
     JSONObject toJson() throws JSONException {
         JSONObject object = new JSONObject();
         object.put("requiredMinutes", requiredMinutes());
@@ -88,6 +101,7 @@ final class WorkSettings {
         object.put("lunchMinutes", lunchMinutes());
         object.put("safetyBufferMinutes", safetyBufferMinutes());
         object.put("onboardingCompleted", onboardingCompleted());
+        object.put("region", region());
         return object;
     }
 
@@ -110,6 +124,9 @@ final class WorkSettings {
         }
         if (object.has("onboardingCompleted")) {
             editor.putBoolean(ONBOARDING_COMPLETED, object.optBoolean("onboardingCompleted", onboardingCompleted()));
+        }
+        if (object.has("region")) {
+            editor.putString(REGION, WorkdayPolicy.normalizeRegion(object.optString("region", region())));
         }
         editor.apply();
     }

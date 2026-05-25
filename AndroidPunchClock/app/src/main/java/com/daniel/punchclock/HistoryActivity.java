@@ -21,13 +21,15 @@ import java.util.Map;
 public final class HistoryActivity extends Activity {
     private AttendanceStore store;
     private WorkSettings settings;
+    private String region;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         store = new AttendanceStore(this);
         settings = new WorkSettings(this);
-        WorkdayPolicy.loadExternalRules(this);
+        region = settings.region();
+        WorkdayPolicy.loadExternalRules(this, region);
         buildUi();
     }
 
@@ -73,7 +75,7 @@ public final class HistoryActivity extends Activity {
 
         LocalDate cursor = start;
         while (!cursor.isAfter(end)) {
-            if (WorkdayPolicy.isWorkday(cursor)) {
+            if (WorkdayPolicy.isWorkday(cursor, region)) {
                 workdays++;
             }
             cursor = cursor.plusDays(1);
@@ -123,7 +125,7 @@ public final class HistoryActivity extends Activity {
         ArrayList<BarChartView.Entry> entries = new ArrayList<>();
         LocalDate cursor = start;
         while (!cursor.isAfter(end)) {
-            if (WorkdayPolicy.isWorkday(cursor)) {
+            if (WorkdayPolicy.isWorkday(cursor, region)) {
                 WorkRecord record = byDay.get(cursor);
                 float value = 0;
                 int colorId = R.color.line;
@@ -158,7 +160,7 @@ public final class HistoryActivity extends Activity {
 
         for (int index = records.size() - 1; index >= 0; index--) {
             WorkRecord record = records.get(index);
-            if (!WorkdayPolicy.isWorkday(record.day)) {
+            if (!WorkdayPolicy.isWorkday(record.day, region)) {
                 continue;
             }
             section.addView(recordRow(record));
