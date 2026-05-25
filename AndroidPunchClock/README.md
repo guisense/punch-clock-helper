@@ -6,15 +6,32 @@ Android 原生版本。應用不需要服務器，資料只保存在手機本機
 
 - 一鍵記錄今天上班時間
 - 一鍵記錄今天下班時間
-- 自訂每日工時
-- 可選擇是否扣除午休，並自訂午休時長
+- 首次使用三步引導：每日工時、午休扣除、安全緩衝
+- 自訂每日工時、午休時長、安全緩衝時間
 - 自動計算安全下班時間
 - 手動補錄
+- 最近一步撤銷
 - 日歷圖表查看最近一週與最近一月
+- 所在地區可選：中國大陸、中國香港、中國臺灣
+- 支援從 GitHub 更新所在地區節假日資料
 - 通知欄常駐下班倒計時
-- 桌面小組件
+- 小、中、大三種桌面小組件
+- 跟隨系統深色模式
+- CSV 匯出、JSON 備份與恢復
 - 圓形輪盤設定工時，支持震動回饋
 - 所有資料只保存在本機，不會上傳
+
+## 節假日同步
+
+App 會根據設定頁的「所在地區」讀取對應資料：
+
+```text
+../holidays/cn/2026.json
+../holidays/hk/2026.json
+../holidays/tw/2026.json
+```
+
+線上更新使用 GitHub raw JSON。更新失敗時會保留內建 fallback 規則。
 
 ## 開發工具
 
@@ -46,6 +63,13 @@ gradle/wrapper/gradle-wrapper.properties
 4. 手機上允許 USB 調試授權
 5. Android Studio 左上角選擇你的 OPPO 手機
 6. 點 Run
+
+也可以用命令列安裝：
+
+```sh
+./gradlew assembleDebug
+adb install -r app/build/outputs/apk/debug/app-debug.apk
+```
 
 ## ColorOS 提醒設定
 
