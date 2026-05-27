@@ -20,8 +20,17 @@ final class WorkRecord {
         this.day = day;
     }
 
+    LocalDateTime effectiveClockIn(WorkSettings settings) {
+        if (clockIn == null) {
+            return null;
+        }
+        LocalDateTime earliest = clockIn.toLocalDate().atTime(settings.earliestBillableStartTime());
+        return clockIn.isBefore(earliest) ? earliest : clockIn;
+    }
+
     LocalDateTime plannedClockOut(WorkSettings settings) {
-        return clockIn == null ? null : clockIn.plusMinutes(settings.targetPresenceMinutes());
+        LocalDateTime effectiveStart = effectiveClockIn(settings);
+        return effectiveStart == null ? null : effectiveStart.plusMinutes(settings.targetPresenceMinutes());
     }
 
     LocalDateTime safeClockOut(WorkSettings settings) {
@@ -29,15 +38,15 @@ final class WorkRecord {
         return planned == null ? null : planned.plusMinutes(settings.safetyBufferMinutes());
     }
 
-    long presenceMinutes() {
+    long presenceMinutes(WorkSettings settings) {
         if (clockIn == null || clockOut == null) {
             return -1;
         }
-        return Math.max(0, Duration.between(clockIn, clockOut).toMinutes());
+        return Math.max(0, Duration.between(effectiveClockIn(settings), clockOut).toMinutes());
     }
 
     long workedMinutes(WorkSettings settings) {
-        long presence = presenceMinutes();
+        long presence = presenceMinutes(settings);
         if (presence < 0) {
             return -1;
         }

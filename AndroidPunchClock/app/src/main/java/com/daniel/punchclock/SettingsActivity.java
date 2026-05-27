@@ -3,6 +3,7 @@ package com.daniel.punchclock;
 import android.app.Activity;
 import android.app.AlarmManager;
 import android.app.AlertDialog;
+import android.app.TimePickerDialog;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.net.Uri;
@@ -34,6 +35,7 @@ public final class SettingsActivity extends Activity {
     private TextView lunchValue;
     private TextView bufferValue;
     private TextView targetValue;
+    private TextView earliestStartValue;
     private TextView regionValue;
     private TextView notificationStatus;
     private TextView exactAlarmStatus;
@@ -102,6 +104,15 @@ public final class SettingsActivity extends Activity {
         targetValue = text("", 16, R.color.blue, true);
         targetRow.addView(targetValue);
         workPanel.addView(targetRow);
+
+        LinearLayout earliestStartRow = settingRow("最早計薪上班");
+        earliestStartValue = editableValue();
+        earliestStartRow.addView(earliestStartValue);
+        earliestStartRow.setOnClickListener(view -> editClockTime("最早計薪上班", settings.earliestBillableStartMinutes(), value -> settings.setEarliestBillableStartMinutes(value)));
+        workPanel.addView(earliestStartRow);
+        TextView earliestStartHint = text("早於此時間打卡時，工時計算會從此時間開始。", 14, R.color.muted, false);
+        earliestStartHint.setPadding(0, 0, 0, dp(4));
+        workPanel.addView(earliestStartHint);
 
         LinearLayout bufferRow = settingRow("安全緩衝");
         bufferValue = editableValue();
@@ -215,6 +226,22 @@ public final class SettingsActivity extends Activity {
                 .show();
     }
 
+    private void editClockTime(String title, int currentMinutes, MinuteSetter setter) {
+        TimePickerDialog dialog = new TimePickerDialog(
+                this,
+                (view, hourOfDay, minute) -> {
+                    setter.set(hourOfDay * 60 + minute);
+                    CountdownNotifier.update(this);
+                    refresh();
+                },
+                currentMinutes / 60,
+                currentMinutes % 60,
+                true
+        );
+        dialog.setTitle(title);
+        dialog.show();
+    }
+
     private void chooseRegion() {
         int checked = 0;
         String current = settings.region();
@@ -262,6 +289,7 @@ public final class SettingsActivity extends Activity {
         requiredValue.setText(editableText(settings.requiredText()));
         lunchValue.setText(editableText(settings.lunchText()));
         targetValue.setText(settings.targetText());
+        earliestStartValue.setText(editableText(settings.earliestBillableStartText()));
         bufferValue.setText(editableText(settings.safetyBufferText()));
         holidayStatusText.setText("目前地區：" + settings.regionLabel()
                 + "\n目前狀態：" + settings.holidayStatus()
