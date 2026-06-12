@@ -92,10 +92,27 @@ final class AttendanceStore {
         save();
     }
 
-    void saveManualRecord(LocalDate day, LocalDateTime clockIn, LocalDateTime clockOut) {
+    void saveManualRecord(LocalDate day, LocalDateTime clockIn, LocalDateTime clockOut, Integer leaveStartMinutes, Integer leaveEndMinutes, boolean leaveIncludesLunch) {
         WorkRecord record = recordFor(day);
         record.clockIn = clockIn;
         record.clockOut = clockOut;
+        record.leaveMinutes = 0;
+        record.leaveStartMinutes = leaveStartMinutes;
+        record.leaveEndMinutes = leaveEndMinutes;
+        record.leaveIncludesLunch = leaveIncludesLunch;
+        record.billableStartOverrideMinutes = null;
+        record.deductLunchOverride = null;
+        save();
+    }
+
+    void updateDayLeave(LocalDate day, Integer leaveStartMinutes, Integer leaveEndMinutes, boolean leaveIncludesLunch) {
+        WorkRecord record = recordFor(day);
+        record.leaveMinutes = 0;
+        record.leaveStartMinutes = leaveStartMinutes;
+        record.leaveEndMinutes = leaveEndMinutes;
+        record.leaveIncludesLunch = leaveIncludesLunch;
+        record.billableStartOverrideMinutes = null;
+        record.deductLunchOverride = null;
         save();
     }
 
@@ -189,6 +206,7 @@ final class AttendanceStore {
                     if (record.clockOut != null) {
                         object.put("clockOut", record.clockOut.toString());
                     }
+                    putOptionalFields(object, record);
                     array.put(object);
                 } catch (JSONException ignored) {
                 }
@@ -225,6 +243,7 @@ final class AttendanceStore {
                 if (object.has("clockOut")) {
                     record.clockOut = LocalDateTime.parse(object.getString("clockOut"));
                 }
+                readOptionalFields(object, record);
                 records.add(record);
             }
         } catch (JSONException ignored) {
@@ -244,10 +263,44 @@ final class AttendanceStore {
                 if (record.clockOut != null) {
                     object.put("clockOut", record.clockOut.toString());
                 }
+                putOptionalFields(object, record);
                 array.put(object);
             } catch (JSONException ignored) {
             }
         }
         prefs.edit().putString(RECORDS, array.toString()).apply();
+    }
+
+    private void putOptionalFields(JSONObject object, WorkRecord record) throws JSONException {
+        if (record.leaveMinutes > 0) {
+            object.put("leaveMinutes", record.leaveMinutes);
+        }
+        if (record.leaveStartMinutes != null && record.leaveEndMinutes != null) {
+            object.put("leaveStartMinutes", record.leaveStartMinutes);
+            object.put("leaveEndMinutes", record.leaveEndMinutes);
+            object.put("leaveIncludesLunch", record.leaveIncludesLunch);
+        }
+        if (record.billableStartOverrideMinutes != null) {
+            object.put("billableStartOverrideMinutes", record.billableStartOverrideMinutes);
+        }
+        if (record.deductLunchOverride != null) {
+            object.put("deductLunchOverride", record.deductLunchOverride);
+        }
+    }
+
+    private void readOptionalFields(JSONObject object, WorkRecord record) {
+        record.leaveMinutes = Math.max(0, object.optInt("leaveMinutes", 0));
+        if (object.has("leaveStartMinutes") && object.has("leaveEndMinutes")) {
+            record.leaveStartMinutes = Math.max(0, Math.min(23 * 60 + 59, object.optInt("leaveStartMinutes", 0)));
+            record.leaveEndMinutes = Math.max(0, Math.min(24 * 60, object.optInt("leaveEndMinutes", 0)));
+            record.leaveIncludesLunch = object.optBoolean("leaveIncludesLunch", true);
+        }
+        if (object.has("billableStartOverrideMinutes")) {
+            int minutes = object.optInt("billableStartOverrideMinutes", 0);
+            record.billableStartOverrideMinutes = Math.max(0, Math.min(23 * 60 + 59, minutes));
+        }
+        if (object.has("deductLunchOverride")) {
+            record.deductLunchOverride = object.optBoolean("deductLunchOverride");
+        }
     }
 }

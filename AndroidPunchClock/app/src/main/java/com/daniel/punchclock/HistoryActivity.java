@@ -178,6 +178,11 @@ public final class HistoryActivity extends Activity {
         TextView time = text(Formatters.time(record.clockIn) + " - " + Formatters.time(record.clockOut), 13, R.color.muted, false);
         time.setPadding(0, dp(3), 0, 0);
         left.addView(time);
+        if (record.leaveCreditMinutes(settings) > 0) {
+            TextView leave = text("請假 " + record.leaveText(settings), 13, R.color.orange, true);
+            leave.setPadding(0, dp(3), 0, 0);
+            left.addView(leave);
+        }
         row.addView(left, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
 
         LinearLayout right = new LinearLayout(this);

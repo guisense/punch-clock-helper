@@ -6,6 +6,7 @@ import android.app.TimePickerDialog;
 import android.os.Bundle;
 import android.view.Gravity;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
@@ -16,21 +17,34 @@ import java.time.LocalTime;
 
 public final class ManualEntryActivity extends Activity {
     private AttendanceStore store;
+    private WorkSettings settings;
     private LocalDate day;
     private LocalTime clockIn;
     private LocalTime clockOut;
+    private Integer leaveStartMinutes;
+    private Integer leaveEndMinutes;
+    private boolean leaveIncludesLunch = true;
     private TextView dayValue;
     private TextView clockInValue;
     private TextView clockOutValue;
+    private TextView leaveValue;
+    private TextView leaveStartValue;
+    private TextView leaveEndValue;
+    private CheckBox leaveIncludesLunchCheck;
+    private boolean refreshing;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         store = new AttendanceStore(this);
+        settings = new WorkSettings(this);
         WorkRecord today = store.todayRecord();
         day = today.day;
         clockIn = today.clockIn == null ? LocalTime.of(8, 30) : today.clockIn.toLocalTime();
         clockOut = today.clockOut == null ? clockIn.plusHours(8) : today.clockOut.toLocalTime();
+        leaveStartMinutes = today.leaveStartMinutes;
+        leaveEndMinutes = today.leaveEndMinutes;
+        leaveIncludesLunch = today.leaveIncludesLunch;
         buildUi();
         refresh();
     }
@@ -54,13 +68,33 @@ public final class ManualEntryActivity extends Activity {
         dayValue = addPickRow(panel, "日期", view -> pickDate());
         clockInValue = addPickRow(panel, "上班時間", view -> pickTime(true));
         clockOutValue = addPickRow(panel, "下班時間", view -> pickTime(false));
+        leaveValue = addPickRow(panel, "快速請假", view -> pickLeavePreset());
+        leaveStartValue = addPickRow(panel, "請假開始", view -> pickLeaveTime(true));
+        leaveEndValue = addPickRow(panel, "請假結束", view -> pickLeaveTime(false));
+
+        leaveIncludesLunchCheck = new CheckBox(this);
+        leaveIncludesLunchCheck.setText("請假時段包含午休（自動剔除）");
+        leaveIncludesLunchCheck.setTextSize(16);
+        leaveIncludesLunchCheck.setTextColor(color(R.color.text));
+        leaveIncludesLunchCheck.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            if (refreshing) {
+                return;
+            }
+            leaveIncludesLunch = isChecked;
+            refresh();
+        });
+        panel.addView(leaveIncludesLunchCheck);
+
+        TextView leaveHint = text("請假分鐘會按起訖時間計算；勾選包含午休時，與午休重疊的部分不算請假。", 14, R.color.muted, false);
+        leaveHint.setPadding(0, dp(8), 0, dp(2));
+        panel.addView(leaveHint);
         root.addView(panel);
 
         Button save = compactButton("保存補錄");
         save.setTextSize(18);
         UiStyle.stylePrimaryButton(save, this, R.color.blue);
         save.setOnClickListener(view -> {
-            store.saveManualRecord(day, LocalDateTime.of(day, clockIn), LocalDateTime.of(day, clockOut));
+            store.saveManualRecord(day, LocalDateTime.of(day, clockIn), LocalDateTime.of(day, clockOut), leaveStartMinutes, leaveEndMinutes, leaveIncludesLunch);
             CountdownNotifier.update(this);
             finish();
         });
@@ -91,6 +125,15 @@ public final class ManualEntryActivity extends Activity {
                 if (record.clockOut != null) {
                     clockOut = record.clockOut.toLocalTime();
                 }
+                leaveStartMinutes = record.leaveStartMinutes;
+                leaveEndMinutes = record.leaveEndMinutes;
+                leaveIncludesLunch = record.leaveIncludesLunch;
+            } else {
+                clockIn = LocalTime.of(8, 30);
+                clockOut = clockIn.plusHours(8);
+                leaveStartMinutes = null;
+                leaveEndMinutes = null;
+                leaveIncludesLunch = true;
             }
             refresh();
         }, day.getYear(), day.getMonthValue() - 1, day.getDayOfMonth());
@@ -113,10 +156,76 @@ public final class ManualEntryActivity extends Activity {
         dialog.show();
     }
 
+    private void pickLeavePreset() {
+        String[] labels = {"不請假", "全天請假", "上午請假", "下午請假"};
+        new android.app.AlertDialog.Builder(this)
+                .setTitle("快速請假")
+                .setItems(labels, (dialog, which) -> {
+                    applyLeavePreset(which);
+                    refresh();
+                    dialog.dismiss();
+                })
+                .setNegativeButton("取消", null)
+                .show();
+    }
+
+    private void pickLeaveTime(boolean isStart) {
+        int current = isStart
+                ? (leaveStartMinutes == null ? settings.lunchStartMinutes() - settings.requiredMinutes() / 2 : leaveStartMinutes)
+                : (leaveEndMinutes == null ? settings.lunchEndMinutes() + settings.requiredMinutes() / 2 : leaveEndMinutes);
+        TimePickerDialog dialog = new TimePickerDialog(this, (view, hour, minute) -> {
+            if (isStart) {
+                leaveStartMinutes = hour * 60 + minute;
+                if (leaveEndMinutes == null || leaveEndMinutes <= leaveStartMinutes) {
+                    leaveEndMinutes = Math.min(24 * 60, leaveStartMinutes + settings.requiredMinutes() / 2);
+                }
+            } else {
+                leaveEndMinutes = hour * 60 + minute;
+            }
+            refresh();
+        }, current / 60, current % 60, true);
+        dialog.setTitle(isStart ? "請假開始" : "請假結束");
+        dialog.show();
+    }
+
     private void refresh() {
+        refreshing = true;
         dayValue.setText(day.toString());
         clockInValue.setText(Formatters.time(clockIn));
         clockOutValue.setText(Formatters.time(clockOut));
+        WorkRecord preview = new WorkRecord(day);
+        preview.leaveStartMinutes = leaveStartMinutes;
+        preview.leaveEndMinutes = leaveEndMinutes;
+        preview.leaveIncludesLunch = leaveIncludesLunch;
+        leaveValue.setText(preview.leaveText(settings));
+        leaveStartValue.setText(leaveStartMinutes == null ? "未設定" : formatClockTime(leaveStartMinutes));
+        leaveEndValue.setText(leaveEndMinutes == null ? "未設定" : formatClockTime(leaveEndMinutes));
+        if (leaveIncludesLunchCheck != null && leaveIncludesLunchCheck.isChecked() != leaveIncludesLunch) {
+            leaveIncludesLunchCheck.setChecked(leaveIncludesLunch);
+        }
+        refreshing = false;
+    }
+
+    private void applyLeavePreset(int which) {
+        int half = settings.requiredMinutes() / 2;
+        if (which == 0) {
+            leaveStartMinutes = null;
+            leaveEndMinutes = null;
+        } else if (which == 1) {
+            leaveStartMinutes = Math.max(0, settings.lunchStartMinutes() - half);
+            leaveEndMinutes = Math.min(24 * 60, settings.lunchEndMinutes() + half);
+        } else if (which == 2) {
+            leaveStartMinutes = Math.max(0, settings.lunchStartMinutes() - half);
+            leaveEndMinutes = settings.lunchStartMinutes();
+        } else {
+            leaveStartMinutes = settings.lunchEndMinutes();
+            leaveEndMinutes = Math.min(24 * 60, settings.lunchEndMinutes() + half);
+        }
+        leaveIncludesLunch = true;
+    }
+
+    private String formatClockTime(int minutes) {
+        return String.format("%02d:%02d", minutes / 60, minutes % 60);
     }
 
     private LinearLayout panel() {

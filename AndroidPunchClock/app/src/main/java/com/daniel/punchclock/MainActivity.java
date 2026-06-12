@@ -36,6 +36,9 @@ public final class MainActivity extends Activity {
     private TextView clockInText;
     private TextView clockOutText;
     private TextView workedText;
+    private TextView leaveText;
+    private TextView billableStartText;
+    private TextView requiredTodayText;
     private Button punchButton;
     private LinearLayout undoRow;
     private TextView undoText;
@@ -68,6 +71,8 @@ public final class MainActivity extends Activity {
     @Override
     protected void onResume() {
         super.onResume();
+        store = new AttendanceStore(this);
+        settings = new WorkSettings(this);
         refresh();
     }
 
@@ -148,14 +153,21 @@ public final class MainActivity extends Activity {
         clockInText = addDetail(detail, "上班時間");
         clockOutText = addDetail(detail, "下班時間");
         workedText = addDetail(detail, "實際工時");
+        leaveText = addDetail(detail, "今日請假");
+        billableStartText = addDetail(detail, "今日起算");
+        requiredTodayText = addDetail(detail, "今日應做");
         root.addView(detail);
 
         LinearLayout utilityRow = row();
         utilityRow.setPadding(0, dp(4), 0, 0);
 
+        Button leaveButton = actionButton("今日請假", R.color.orange, false);
+        leaveButton.setOnClickListener(view -> chooseTodayLeave());
+        utilityRow.addView(leaveButton, utilityButtonParams(false));
+
         Button manualButton = actionButton("手動補錄", R.color.blue, false);
         manualButton.setOnClickListener(view -> startActivity(new Intent(this, ManualEntryActivity.class)));
-        utilityRow.addView(manualButton, utilityButtonParams(false));
+        utilityRow.addView(manualButton, utilityButtonParams(true));
 
         Button clearButton = actionButton("清除今天", R.color.red, true);
         clearButton.setOnClickListener(view -> confirmClearToday());
@@ -197,6 +209,46 @@ public final class MainActivity extends Activity {
                     refresh();
                 })
                 .show();
+    }
+
+    private void chooseTodayLeave() {
+        String[] labels = {"不請假", "全天請假", "上午請假", "下午請假", "自定義時間"};
+
+        new AlertDialog.Builder(this)
+                .setTitle("今日請假")
+                .setItems(labels, (dialog, which) -> {
+                    if (which == 4) {
+                        startActivity(new Intent(this, ManualEntryActivity.class));
+                    } else {
+                        applyTodayLeavePreset(which);
+                    }
+                    dialog.dismiss();
+                })
+                .setNegativeButton("取消", null)
+                .show();
+    }
+
+    private void applyTodayLeavePreset(int which) {
+        Integer start = null;
+        Integer end = null;
+        int half = settings.requiredMinutes() / 2;
+        if (which == 1) {
+            start = Math.max(0, settings.lunchStartMinutes() - half);
+            end = Math.min(24 * 60, settings.lunchEndMinutes() + half);
+        } else if (which == 2) {
+            start = Math.max(0, settings.lunchStartMinutes() - half);
+            end = settings.lunchStartMinutes();
+        } else if (which == 3) {
+            start = settings.lunchEndMinutes();
+            end = Math.min(24 * 60, settings.lunchEndMinutes() + half);
+        }
+        store.updateDayLeave(LocalDate.now(), start, end, true);
+        WorkRecord updated = store.todayRecord();
+        if (updated.clockIn != null && updated.clockOut == null) {
+            ReminderScheduler.scheduleSafeClockOut(this, updated, settings);
+            CountdownNotifier.update(this);
+        }
+        refresh();
     }
 
     private void showUndo(String action, String message) {
@@ -253,6 +305,9 @@ public final class MainActivity extends Activity {
         clockInText.setText(Formatters.time(record.clockIn));
         clockOutText.setText(Formatters.time(record.clockOut));
         workedText.setText(Formatters.workedTime(record.workedMinutes(settings)));
+        leaveText.setText(record.leaveText(settings));
+        billableStartText.setText(record.billableStartText(settings));
+        requiredTodayText.setText(Formatters.workedTime(record.requiredMinutes(settings)));
 
         setSafeMessage(record);
     }

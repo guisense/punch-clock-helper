@@ -33,6 +33,7 @@ public final class SettingsActivity extends Activity {
     private AttendanceStore store;
     private TextView requiredValue;
     private TextView lunchValue;
+    private TextView lunchStartValue;
     private TextView bufferValue;
     private TextView targetValue;
     private TextView earliestStartValue;
@@ -99,6 +100,12 @@ public final class SettingsActivity extends Activity {
         lunchRow.addView(lunchValue);
         lunchRow.setOnClickListener(view -> editMinutes("午休時長", settings.lunchMinutes(), 0, 180, value -> settings.setLunchMinutes(value)));
         workPanel.addView(lunchRow);
+
+        LinearLayout lunchStartRow = settingRow("午休開始");
+        lunchStartValue = editableValue();
+        lunchStartRow.addView(lunchStartValue);
+        lunchStartRow.setOnClickListener(view -> editClockTime("午休開始", settings.lunchStartMinutes(), value -> settings.setLunchStartMinutes(value)));
+        workPanel.addView(lunchStartRow);
 
         LinearLayout targetRow = settingRow("在公司時長");
         targetValue = text("", 16, R.color.blue, true);
@@ -288,6 +295,7 @@ public final class SettingsActivity extends Activity {
         regionValue.setText(editableText(settings.regionLabel()));
         requiredValue.setText(editableText(settings.requiredText()));
         lunchValue.setText(editableText(settings.lunchText()));
+        lunchStartValue.setText(editableText(settings.lunchStartText()));
         targetValue.setText(settings.targetText());
         earliestStartValue.setText(editableText(settings.earliestBillableStartText()));
         bufferValue.setText(editableText(settings.safetyBufferText()));

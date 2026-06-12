@@ -13,6 +13,7 @@ final class WorkSettings {
     private static final String REQUIRED_MINUTES = "required_minutes";
     private static final String DEDUCT_LUNCH = "deduct_lunch";
     private static final String LUNCH_MINUTES = "lunch_minutes";
+    private static final String LUNCH_START_MINUTES = "lunch_start_minutes";
     private static final String SAFETY_BUFFER_MINUTES = "safety_buffer_minutes";
     private static final String EARLIEST_BILLABLE_START_MINUTES = "earliest_billable_start_minutes";
     private static final String ONBOARDING_COMPLETED = "onboarding_completed";
@@ -36,6 +37,14 @@ final class WorkSettings {
 
     int lunchMinutes() {
         return prefs.getInt(LUNCH_MINUTES, 60);
+    }
+
+    int lunchStartMinutes() {
+        return prefs.getInt(LUNCH_START_MINUTES, 12 * 60 + 30);
+    }
+
+    int lunchEndMinutes() {
+        return Math.min(24 * 60, lunchStartMinutes() + lunchMinutes());
     }
 
     int targetPresenceMinutes() {
@@ -86,6 +95,10 @@ final class WorkSettings {
         prefs.edit().putInt(LUNCH_MINUTES, clamp(minutes, 0, 180)).apply();
     }
 
+    void setLunchStartMinutes(int minutes) {
+        prefs.edit().putInt(LUNCH_START_MINUTES, clamp(minutes, 0, 23 * 60 + 59)).apply();
+    }
+
     void setSafetyBufferMinutes(int minutes) {
         prefs.edit().putInt(SAFETY_BUFFER_MINUTES, clamp(minutes, 0, 60)).apply();
     }
@@ -114,6 +127,7 @@ final class WorkSettings {
         object.put("requiredMinutes", requiredMinutes());
         object.put("deductLunch", deductLunch());
         object.put("lunchMinutes", lunchMinutes());
+        object.put("lunchStartMinutes", lunchStartMinutes());
         object.put("safetyBufferMinutes", safetyBufferMinutes());
         object.put("earliestBillableStartMinutes", earliestBillableStartMinutes());
         object.put("onboardingCompleted", onboardingCompleted());
@@ -134,6 +148,9 @@ final class WorkSettings {
         }
         if (object.has("lunchMinutes")) {
             editor.putInt(LUNCH_MINUTES, clamp(object.optInt("lunchMinutes", lunchMinutes()), 0, 180));
+        }
+        if (object.has("lunchStartMinutes")) {
+            editor.putInt(LUNCH_START_MINUTES, clamp(object.optInt("lunchStartMinutes", lunchStartMinutes()), 0, 23 * 60 + 59));
         }
         if (object.has("safetyBufferMinutes")) {
             editor.putInt(SAFETY_BUFFER_MINUTES, clamp(object.optInt("safetyBufferMinutes", safetyBufferMinutes()), 0, 60));
@@ -160,6 +177,10 @@ final class WorkSettings {
 
     String lunchText() {
         return lunchMinutes() + " 分鐘";
+    }
+
+    String lunchStartText() {
+        return formatClockTime(lunchStartMinutes());
     }
 
     String safetyBufferText() {
